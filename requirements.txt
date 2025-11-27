@@ -1,18 +1,19 @@
 # Core Web Frameworks
 Flask>=3.0.0
 fastapi>=0.100.0
+python-multipart>=0.0.6
 uvicorn>=0.23.0
 starlette>=0.27.0
 
 # Async & HTTP
 aiohttp>=3.9.0
 aiofiles>=23.0.0
-websockets>=12.0
+websockets>=9.1,<11
 requests>=2.31.0
 
 # AI/ML APIs
 openai>=1.0.0
-deepgram-sdk>=3.0.0,<4.0.0
+deepgram-sdk==2.12.0
 
 # Twilio (Voice & SMS)
 twilio>=9.0.0

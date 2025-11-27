@@ -55,8 +55,9 @@ paypal_client_secret_sandbox = os.getenv('PAYPAL_CLIENT_SECRET_SANDBOX')
 postmark_server_token = os.getenv('POSTMARK_SERVER_TOKEN')
 pepper = os.getenv('PEPPER')
 dbname = os.getenv('DATABASE')
-fastapi_schedule_url = os.getenv('FASTAPI_SCHEDULE_URL')
-fastapi_cancel_url = os.getenv('FASTAPI_CANCEL_URL')
+# Internal communication with austin-to-santa.py via HTTP (faster than HTTPS for localhost)
+fastapi_schedule_url = "http://localhost:7778/schedule-call"
+fastapi_cancel_url = "http://localhost:7778/cancel-call"
 default_lang = "en"
 qr_data = f"tel:{twilio_number}"  
 

@@ -1,81 +1,81 @@
-# 🛠️ Development Tools
+# Development Tools
 ## AI-Powered Internationalization Utilities
 
-Esta carpeta contiene **herramientas de desarrollo** que se utilizaron para crear y mantener la aplicación "Santa Claus is Calling". **No son necesarias para ejecutar la aplicación**, pero pueden ser útiles para otros desarrolladores que quieran automatizar tareas similares.
+This folder contains **development tools** used to create and maintain the "Santa Claus is Calling" application. **They are not required to run the application**, but can be useful for other developers who want to automate similar tasks.
 
 ---
 
-## 📚 Herramientas Incluidas
+## Included Tools
 
-### 1. **parser.py** - Extractor Automático de Strings
+### 1. **parser.py** - Automatic String Extractor
 
-**Propósito**: Extraer automáticamente todos los strings visibles al usuario de archivos HTML/templates y reemplazarlos por variables para internacionalización (i18n).
+**Purpose**: Automatically extract all user-visible strings from HTML/template files and replace them with variables for internationalization (i18n).
 
-**¿Cómo funciona?**
-- Lee un archivo HTML línea por línea
-- Utiliza GPT-4 para identificar strings que el usuario verá
-- Extrae esos strings y los reemplaza por variables Flask/Jinja2 (`{{ variable_name }}`)
-- Guarda el HTML procesado y un JSON con todos los strings extraídos
+**How it works:**
+- Reads an HTML file line by line
+- Uses GPT-4 to identify strings that the user will see
+- Extracts those strings and replaces them with Flask/Jinja2 variables (`{{ variable_name }}`)
+- Saves the processed HTML and a JSON with all extracted strings
 
-**Uso**:
+**Usage**:
 ```bash
-# Desde la raíz del proyecto:
+# From the project root:
 python dev-tools/parser.py templates/payment.html
 
-# Opcionalmente, especifica el nombre del archivo JSON de salida:
+# Optionally, specify the output JSON filename:
 python dev-tools/parser.py templates/payment.html custom_strings
 ```
 
-**Salida**:
-- `parsed/payment.html` - HTML con variables en lugar de strings hardcodeados
-- `parsed/strings.json` - Diccionario con todas las variables y sus strings
+**Output**:
+- `parsed/payment.html` - HTML with variables instead of hardcoded strings
+- `parsed/strings.json` - Dictionary with all variables and their strings
 
-**Ejemplo**:
+**Example**:
 ```html
-<!-- Antes: -->
-<button>Pagar Ahora</button>
+<!-- Before: -->
+<button>Pay Now</button>
 
-<!-- Después: -->
+<!-- After: -->
 <button>{{ btn_pay_now }}</button>
 ```
 
 ```json
 {
-    "btn_pay_now": "Pagar Ahora"
+    "btn_pay_now": "Pay Now"
 }
 ```
 
-**Ventajas**:
-- ✅ Automatiza el proceso de extracción de strings
-- ✅ GPT-4 genera nombres de variables descriptivos
-- ✅ Detecta contexto para reutilizar variables existentes
-- ✅ Mantiene indentación y formato del HTML original
+**Advantages**:
+- Automates the string extraction process
+- GPT-4 generates descriptive variable names
+- Detects context to reuse existing variables
+- Maintains indentation and format of the original HTML
 
 ---
 
-### 2. **strings-translator.py** - Traductor Automático con IA
+### 2. **strings-translator.py** - Automatic AI Translator
 
-**Propósito**: Traducir automáticamente archivos JSON de strings de un idioma a otro usando GPT-4.
+**Purpose**: Automatically translate JSON string files from one language to another using GPT-4.
 
-**¿Cómo funciona?**
-- Lee un archivo JSON con strings en el idioma origen (ej: español)
-- Utiliza GPT-4 para traducir cada string al idioma destino
-- Mantiene las mismas claves de variables
-- Respeta strings ya traducidos (no los vuelve a traducir)
-- Guarda el JSON traducido en `templates/lang/`
+**How it works:**
+- Reads a JSON file with strings in the source language (e.g., Spanish)
+- Uses GPT-4 to translate each string to the target language
+- Maintains the same variable keys
+- Respects already translated strings (doesn't re-translate them)
+- Saves the translated JSON in `templates/lang/`
 
-**Uso**:
+**Usage**:
 ```bash
-# Desde la raíz del proyecto:
+# From the project root:
 python dev-tools/strings-translator.py strings_es.json strings_en.json
 
-# El código de idioma se extrae automáticamente del nombre del archivo (_en, _es, _fr, etc.)
+# The language code is automatically extracted from the filename (_en, _es, _fr, etc.)
 ```
 
-**Salida**:
-- `templates/lang/strings_en.json` - JSON traducido al idioma destino
+**Output**:
+- `templates/lang/strings_en.json` - JSON translated to target language
 
-**Ejemplo**:
+**Example**:
 ```json
 // Input: strings_es.json
 {
@@ -90,205 +90,162 @@ python dev-tools/strings-translator.py strings_es.json strings_en.json
 }
 ```
 
-**Ventajas**:
-- ✅ Traduce múltiples idiomas automáticamente
-- ✅ Mantiene consistencia en nombres de variables
-- ✅ No vuelve a traducir strings ya existentes (ahorra tokens)
-- ✅ Soporta cualquier idioma que GPT-4 entienda
+**Advantages**:
+- Translates multiple languages automatically
+- Maintains consistency in variable names
+- Doesn't re-translate already existing strings (saves tokens)
+- Supports any language that GPT-4 understands
 
 ---
 
-## 📁 Estructura de Archivos
+## File Structure
 
 ```
 dev-tools/
-├── README.md                    # Este archivo
-├── parser.py                    # Extractor de strings
-├── strings-translator.py        # Traductor automático
+├── README.md                    # This file
+├── parser.py                    # String extractor
+├── strings-translator.py        # Automatic translator
 └── roles/
-    ├── parser.txt               # Prompt del sistema para parser.py
-    └── strings-translator.txt   # Prompt del sistema para translator.py
+    ├── parser.txt               # System prompt for parser.py
+    └── strings-translator.txt   # System prompt for translator.py
 ```
 
 ---
 
-## 🔧 Configuración
+## Configuration
 
-### Requisitos:
+### Requirements:
 1. **Python 3.8+**
-2. **Dependencias**:
+2. **Dependencies**:
    ```bash
    pip install openai python-dotenv
    ```
 
-3. **API Key de OpenAI**:
-   - Estas herramientas requieren una API key de OpenAI
-   - Asegúrate de tener `OPENAI_KEY` configurada en tu `.env`
-   - Utilizan el modelo `gpt-4-0125-preview`
+3. **OpenAI API Key**:
+   - These tools require an OpenAI API key
+   - Make sure you have `OPENAI_KEY` configured in your `.env`
+   - They use the `gpt-4-0125-preview` model
 
-### Variables de entorno necesarias:
+### Required environment variables:
 ```env
 OPENAI_KEY=your_openai_api_key
 ```
 
 ---
 
-## 💡 Casos de Uso
+## Use Cases
 
-### Workflow completo de internacionalización:
+### Complete internationalization workflow:
 
-#### Paso 1: Extraer strings de un template
+#### Step 1: Extract strings from a template
 ```bash
 python dev-tools/parser.py templates/index.html
 ```
 
-Esto genera:
-- `parsed/index.html` (con variables)
-- `parsed/strings.json` (strings en español)
+This generates:
+- `parsed/index.html` (with variables)
+- `parsed/strings.json` (strings in the source language)
 
-#### Paso 2: Copiar el strings.json base
+#### Step 2: Copy the base strings.json
 ```bash
 cp parsed/strings.json templates/lang/strings_es.json
 ```
 
-#### Paso 3: Traducir a otros idiomas
+#### Step 3: Translate to other languages
 ```bash
-# Inglés
+# English
 python dev-tools/strings-translator.py strings_es.json strings_en.json
 
-# Francés
+# French
 python dev-tools/strings-translator.py strings_es.json strings_fr.json
 
-# Alemán
+# German
 python dev-tools/strings-translator.py strings_es.json strings_de.json
 
 # etc...
 ```
 
-#### Paso 4: Usar el template procesado
-Reemplaza el template original con el parseado y actualiza tu código Flask/FastAPI para cargar los strings según el idioma del usuario.
+#### Step 4: Use the processed template
+Replace the original template with the parsed one and update your Flask/FastAPI code to load strings based on the user's language.
 
 ---
 
-## 🎯 Por qué usar estas herramientas
+## Why Use These Tools
 
-### Ventajas vs. Traducción Manual:
-1. **Velocidad**: Traduce cientos de strings en minutos
-2. **Consistencia**: GPT-4 mantiene consistencia en la terminología
-3. **Contexto**: Entiende el contexto de la aplicación para mejores traducciones
-4. **Escalabilidad**: Fácil de añadir nuevos idiomas
-5. **Mantenimiento**: Solo traduces los strings nuevos, no los existentes
+### Advantages vs. Manual Translation:
+1. **Speed**: Translates hundreds of strings in minutes
+2. **Consistency**: GPT-4 maintains consistency in terminology
+3. **Context**: Understands the application context for better translations
+4. **Scalability**: Easy to add new languages
+5. **Maintenance**: Only translate new strings, not existing ones
 
-### Ventajas vs. Servicios de Traducción:
-- 💰 **Más económico**: Pagas por uso de API en lugar de suscripciones
-- 🚀 **Más rápido**: Sin esperar a traductores humanos
-- 🔄 **Automatizable**: Integrable en CI/CD
-- 📊 **Control total**: Tú defines el prompt y el comportamiento
+### Advantages vs. Translation Services:
+- **More economical**: Pay per API usage instead of subscriptions
+- **Faster**: No waiting for human translators
+- **Automatable**: Integrable in CI/CD
+- **Full control**: You define the prompt and behavior
 
 ---
 
-## 📝 Prompts del Sistema
+## System Prompts
 
 ### parser.txt
-Contiene las instrucciones para GPT-4 sobre cómo extraer strings de código HTML:
-- Identificar strings visibles al usuario
-- Generar nombres de variables descriptivos
-- Mantener formato y estructura del código
-- Reutilizar variables cuando el string es idéntico
-- Respetar indentación y espacios
+Contains instructions for GPT-4 on how to extract strings from HTML code:
+- Identify user-visible strings
+- Generate descriptive variable names
+- Maintain code format and structure
+- Reuse variables when strings are identical
+- Respect indentation and spaces
 
 ### strings-translator.txt
-Contiene las instrucciones para GPT-4 sobre cómo traducir strings:
-- Traducir preservando el significado y tono
-- Mantener placeholders y variables de Jinja2
-- Adaptar al contexto cultural del idioma destino
-- Respetar mayúsculas/minúsculas del contexto
-- Mantener longitud similar cuando sea posible
+Contains instructions for GPT-4 on how to translate strings:
+- Translate preserving meaning and tone
+- Maintain Jinja2 placeholders and variables
+- Adapt to the cultural context of the target language
+- Respect capitalization from context
+- Maintain similar length when possible
 
 ---
 
-## 🔍 Limitaciones y Consideraciones
+## Limitations and Considerations
 
-### Costos:
-- Cada ejecución consume tokens de OpenAI
-- `parser.py`: ~100-500 tokens por línea de HTML
-- `strings-translator.py`: ~50-200 tokens por string
-- **Consejo**: Usa en archivos pequeños o por secciones
+### Costs:
+- Each execution consumes OpenAI tokens
+- `parser.py`: ~100-500 tokens per HTML line
+- `strings-translator.py`: ~50-200 tokens per string
+- **Tip**: Use on small files or by sections
 
-### Calidad de traducción:
-- GPT-4 es muy bueno, pero **no reemplaza revisión humana**
-- Recomendado: Revisar traducciones antes de producción
-- Especialmente para textos legales o críticos
+### Translation quality:
+- GPT-4 is very good, but **doesn't replace human review**
+- Recommended: Review translations before production
+- Especially for legal or critical texts
 
-### Limitaciones técnicas:
-- Solo procesa texto, no traduce imágenes o contenido dinámico
-- No valida sintaxis del código generado
-- Requiere conexión a internet
-
----
-
-## 🚀 Mejoras Futuras (Ideas)
-
-Posibles mejoras para estas herramientas:
-- [ ] Soporte para más frameworks (React, Vue, Angular)
-- [ ] Modo batch para múltiples archivos
-- [ ] Caché de traducciones para reducir costos
-- [ ] Validación automática de sintaxis
-- [ ] Integración con git hooks
-- [ ] Detección automática de strings nuevos
-- [ ] Soporte para plurales y géneros
-- [ ] Exportación a formatos estándar (gettext, i18next)
+### Technical limitations:
+- Only processes text, doesn't translate images or dynamic content
+- Doesn't validate generated code syntax
+- Requires internet connection
 
 ---
 
-## 📖 Recursos Adicionales
+## Important Note
 
-### Documentación relacionada:
-- [OpenAI API Documentation](https://platform.openai.com/docs/api-reference)
-- [Flask-Babel](https://flask-babel.tkte.ch/) - Alternativa tradicional para i18n en Flask
-- [Jinja2 Templates](https://jinja.palletsprojects.com/) - Sistema de templates usado
+**These tools are optional and do not run automatically.**
 
-### Idiomas soportados por GPT-4:
-GPT-4 soporta ~100 idiomas, incluyendo:
-- Principales: Inglés, Español, Francés, Alemán, Italiano, Portugués, Holandés
-- Asiáticos: Chino, Japonés, Coreano, Hindi, Árabe, Hebreo
-- Europeos: Ruso, Polaco, Sueco, Danés, Noruego, Finlandés, Griego
-- Y muchos más...
+The main application ("Santa Claus is Calling") **does NOT depend** on these tools to function. The strings are already extracted and translated in `templates/lang/*.json`.
+
+These tools are useful if:
+- You want to add new languages
+- You need to update translations
+- You're creating new pages/templates
+- You want to learn about AI automation
 
 ---
 
-## 🤝 Contribuciones
+## Contact
 
-Si mejoras estas herramientas o creas nuevas utilidades de desarrollo, ¡considera compartirlas!
-
-Posibles contribuciones:
-- Nuevos scripts de automatización
-- Mejoras en los prompts del sistema
-- Soporte para más casos de uso
-- Optimizaciones de rendimiento
-- Documentación adicional
+If you have questions about these tools or want to share improvements, feel free to open an issue in the repository.
 
 ---
 
-## ⚠️ Nota Importante
-
-**Estas herramientas son opcionales y no se ejecutan automáticamente.**
-
-La aplicación principal ("Santa Claus is Calling") **NO depende** de estas herramientas para funcionar. Los strings ya están extraídos y traducidos en `templates/lang/*.json`.
-
-Estas herramientas son útiles si:
-- Quieres añadir nuevos idiomas
-- Necesitas actualizar traducciones
-- Estás creando nuevas páginas/templates
-- Quieres aprender sobre automatización con IA
-
----
-
-## 📧 Contacto
-
-Si tienes preguntas sobre estas herramientas o quieres compartir mejoras, no dudes en abrir un issue en el repositorio.
-
----
-
-**Creado con 🤖 usando GPT-4**
-**Parte del proyecto "Santa Claus is Calling"**
+**Created with GPT-4**
+**Part of the "Santa Claus is Calling" project**

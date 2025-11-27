@@ -1,6 +1,7 @@
 # Environment variables (CRITICAL - DO NOT COMMIT)
 nul
 .env
+venv_santa
 
 # Claude Code local settings
 .claude/

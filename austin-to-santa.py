@@ -153,6 +153,11 @@ def get_db_connection():
     conn = sqlite3.connect(dbname)
     return conn
 
+def is_localhost(request: Request) -> bool:
+    """Check if request comes from localhost (internal communication only)."""
+    client_host = request.client.host if request.client else None
+    return client_host in ("127.0.0.1", "::1")
+
 
 async def setup_deepgram_sdk(call_sid, streamSid):
     global received_handler, gpt_talking, call_extra_info
@@ -252,7 +257,7 @@ async def setup_deepgram_sdk(call_sid, streamSid):
                         full_content, message_history = await send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai)
                         full_transcription[call_sid] = ""
                     else:
-                        print(f"{call_sid} - hablando mientras GPT habla: {sentence_transcript}")
+                        print(f"{call_sid} - user talking while Santa talks (currently does not stop even if talking): {sentence_transcript}")
 
                     received_handler = deepgram_live[call_sid].registerHandler(deepgram_live[call_sid].event.TRANSCRIPT_RECEIVED, get_transcription_add_call_sid)
                     #print("DeepgramLive Activado")
@@ -270,7 +275,7 @@ async def setup_deepgram_sdk(call_sid, streamSid):
                             time_transcription[call_sid] = time.time()
                         
                     else:
-                        print(f"{call_sid} - hablando mientras GPT habla, detección a medias: {sentence_transcript}")
+                        print(f"{call_sid} - user talking while Santa is talking, detection in progress: {sentence_transcript}")
                     
 
         #print(f"{call_sid} ->sale get_transcription_add_call_sid, {id_unico}")
@@ -339,6 +344,7 @@ async def send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai):
     finish_reason = ""
     content = ""
     full_content = ""
+    previous_tts = ""  # Track previous TTS chunk for context
 
     input_tokens = 0
     output_tokens = 0
@@ -374,18 +380,17 @@ async def send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai):
                     content += filter_text(new_content)
 
                     # Call function that splits the text into smaller chunks so it can be sent to TTS more frequently and make it more fluid.
-                    content = await insert_tts_break(content)
+                    # Returns (modified_text, tts_content, remaining) or (text, None, None) if no break
+                    content, tts_content, remaining = await insert_tts_break(content)
 
-                    # If it detects the word [T_B] (text break), then split the "content" variable in two by looking for "T_B" as the split point,
-                    # leaving in tts_content the first chunk (0) of the split where only the text that GPT responded is without the T_B word.
-                    if '[T_B]' in content:
-                        tts_content = content.split('[T_B]')[0]
-                        if (tts_content):
-                            content = content.split('[T_B]')[1]
-                            #print(f"tts_content: {tts_content}")
+                    # If there's a chunk ready to be sent to TTS
+                    if tts_content:
+                        content = remaining
+                        #print(f"tts_content: {tts_content}")
 
-                            # Call to the function that converts text to speech.
-                            await tts11AI_stream(session, elevenlabs_key, tts_content, call_sid, streamSid)    
+                        # Call to the function that converts text to speech with context
+                        await tts11AI_stream(session, elevenlabs_key, tts_content, call_sid, streamSid, previous_text=previous_tts, next_text=remaining)
+                        previous_tts = tts_content  # Update previous context for next chunk
                 else:
                     input_tokens = json_data['usage'].get('prompt_tokens')
                     output_tokens = json_data['usage'].get('completion_tokens')
@@ -408,19 +413,18 @@ async def send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai):
                     content += filter_text(new_content)
 
                     # Call function that splits the text into smaller chunks so it can be sent to TTS more frequently and make it more fluid.
-                    content = await insert_tts_break(content)
+                    # Returns (modified_text, tts_content, remaining) or (text, None, None) if no break
+                    content, tts_content, remaining = await insert_tts_break(content)
 
-                    # If it detects the word [T_B] (text break), then split the "content" variable in two by looking for "T_B" as the split point,
-                    # leaving in tts_content the first chunk (0) of the split where only the text that GPT responded is without the T_B word.
-                    if '[T_B]' in content:
-                        tts_content = content.split('[T_B]')[0]
-                        if (tts_content):
-                            content = content.split('[T_B]')[1]
-                            #print(f"tts_content: {tts_content}")
+                    # If there's a chunk ready to be sent to TTS
+                    if tts_content:
+                        content = remaining
+                        #print(f"tts_content: {tts_content}")
 
-                            # Call to the function that converts text to speech.
-                            await tts11AI_stream(session, elevenlabs_key, tts_content, call_sid, streamSid)    
-                    
+                        # Call to the function that converts text to speech with context
+                        await tts11AI_stream(session, elevenlabs_key, tts_content, call_sid, streamSid, previous_text=previous_tts, next_text=remaining)
+                        previous_tts = tts_content  # Update previous context for next chunk
+
                 elif event_type == "message_stop":
                     break
                 elif event_type == "message_delta":
@@ -429,7 +433,7 @@ async def send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai):
             #print("entra en send_msg_gpt -> Claude")
 
     if (content): # In case there is any text less than 30 characters that has not been played
-        await tts11AI_stream(session, elevenlabs_key, content, call_sid, streamSid)    
+        await tts11AI_stream(session, elevenlabs_key, content, call_sid, streamSid, previous_text=previous_tts)    
 
     total_tokens = input_tokens + output_tokens
     print(f"Tokens used {llm_ai}:\ninput_tokens: {input_tokens}\noutput_tokens: {output_tokens}\ntotal_tokens: {total_tokens}")    
@@ -457,49 +461,31 @@ async def send_msg_gpt(session, call_sid, message_history, streamSid, llm_ai):
     return full_content, message_history
 
 
-# Split the text into smaller chunks adding T_B as a split indicator. 
-async def insert_tts_break_old(text):
-    if len(text) > 30:
-        # Find the first punctuation character after character 30
-        match = re.search(r"[,;!?.)\]]\s(?!\[)", text[30:])
-        if match:
-            # Get the position of the found punctuation character
-            punct_pos = match.start() + 30
-            # Insert the [T_B] tag after the space
-            text = text[:punct_pos+2] + '[T_B] ' + text[punct_pos+2:]
-    return text
-
-
 async def insert_tts_break(text):
-    result = []
-    chunks = []
+    """Split text adding [T_B] marker when text exceeds 30 chars.
+    Finds break point after punctuation+space or falls back to any space.
+    Returns: (modified_text_with_marker, tts_content, remaining_content)
+             or (original_text, None, None) if no break needed."""
+    if len(text) <= 30:
+        return (text, None, None)
 
-    while len(text) > 30:
-        match = re.search(r"(?<=[,;!?.)\]]\s|[a-zA-Z]\s)(?=[a-zA-Z])", text[30:])
-        if match:
-            punct_pos = match.start() + 30
-            chunks.append(text[:punct_pos].rstrip())  # Remove trailing spaces
-            text = text[punct_pos:].lstrip()  # Remove leading spaces
-        else:
-            match = re.search(r"\s+", text[30:])  # Search for space after 30 characters
-            if match:
-                space_pos = match.start() + 30
-                chunks.append(text[:space_pos].rstrip())  # Remove trailing spaces
-                text = text[space_pos:].lstrip()  # Remove leading spaces
-            else:
-                chunks.append(text)
-                text = ""
+    # Find first punctuation + space after 30 chars (excluding [T_B] marker)
+    match = re.search(r"[,;!?.)\]]\s(?!\[)", text[30:])
+    if match:
+        punct_pos = match.start() + 30
+        tts_content = text[:punct_pos+2].rstrip()
+        remaining = text[punct_pos+2:].lstrip()
+        return (tts_content + '[T_B]' + remaining, tts_content, remaining)
 
-    if text:
-        chunks.append(text)  # Add the rest of the text
+    # Fallback: find any space after 30 chars
+    match = re.search(r"\s+", text[30:])
+    if match:
+        space_pos = match.start() + 30
+        tts_content = text[:space_pos].rstrip()
+        remaining = text[space_pos:].lstrip()
+        return (tts_content + '[T_B]' + remaining, tts_content, remaining)
 
-    for i in range(len(chunks)):
-        previous_text = chunks[i - 1] if i > 0 else ""
-        current_text = chunks[i]
-        next_text = chunks[i + 1] if i < len(chunks) - 1 else ""
-        result.append((previous_text, current_text, next_text))
-
-    return result
+    return (text, None, None)
 
             
 async def send_mp3_to_twilio(mp3_data: bytes, call_sid: str, stream_sid: str):
@@ -653,20 +639,21 @@ def filter_text(text):
     filtered_text = re.sub(pattern, "", text)
     return filtered_text
 
-async def tts11AI_stream(session, key: str, text: str, call_sid, streamSid, voice_id: str = None, stability: float = 0.59, similarity_boost: float = 0.99):
+async def tts11AI_stream(session, key: str, text: str, call_sid, streamSid, voice_id: str = None, stability: float = 0.59, similarity_boost: float = 0.99, previous_text: str = "", next_text: str = ""):
     global connected_websockets, call_extra_info
+
+    id_unico = random.uniform(1, 100000)
+    #print(f"{call_sid} ** entra tts11AI_stream, {id_unico}")
 
     # Get voice ID from environment if not provided
     if voice_id is None:
         voice_id = os.getenv("ELEVENLABS_VOICE_ID", "Gqe8GJJLg3haJkTwYj2L")
 
-    id_unico = random.uniform(1, 100000)
-
     # Verification of active sockets
     ws = connected_websockets.get(call_sid)
     if ws is None:
         return
-    
+
     if streamSid is None:
         return
 
@@ -687,7 +674,7 @@ async def tts11AI_stream(session, key: str, text: str, call_sid, streamSid, voic
     
     model_id = "eleven_turbo_v2_5"
 
-    # Datos enviados a la API
+    # Data sent to the API with context for better prosody
     data = {
         "text": text,
         "model_id": model_id,
@@ -697,6 +684,12 @@ async def tts11AI_stream(session, key: str, text: str, call_sid, streamSid, voic
         }
     }
 
+    # Add context if provided (improves prosody and natural flow)
+    if previous_text:
+        data["previous_text"] = previous_text
+    if next_text:
+        data["next_text"] = next_text
+
     CHUNK_SIZE = 1024
 
     # Make request and handle response in Mu-law format
@@ -705,11 +698,13 @@ async def tts11AI_stream(session, key: str, text: str, call_sid, streamSid, voic
             if chunk:
                 await send_audio_to_twilio(ws, chunk, streamSid)
 
+    #print(f"{call_sid} ** sale tts11AI_stream, {id_unico}")
+
 
 # Function to hang up the call using the call_sid provided. Uses the twilio client by updating the call with the specified call_sid
 # and introduces twiml code which is Twilio's own code for managing calls.
 async def hang_up_call(call_sid):
-    print(f"Finalizando llamada")
+    print(f"Hanging up call")
     try:
         call = twilio_client.calls(call_sid).update(twiml=f'<Response><Hangup/></Response>')
             
@@ -971,6 +966,10 @@ async def answer(request: Request, user_id: str, call_job_id: str):
     
 @app.post("/schedule-call")
 async def schedule_call(request: Request, user_id: str = None, call_date: str = None, call_time: str = None, time_zone: str = None, conn = None, close_conn = True):
+    # Only allow internal requests from localhost
+    if not is_localhost(request):
+        raise HTTPException(status_code=403, detail="Access denied: internal endpoint only")
+
     if user_id is None:
         body = await request.json() 
         user_id_from_post = body.get('user_id', None)  
@@ -1043,10 +1042,9 @@ async def schedule_call(request: Request, user_id: str = None, call_date: str = 
 
 @app.post("/cancel-call")
 async def cancel_call(request: Request, request_body: CancelCallRequest):
-    # Verify that the request comes from Cloudflare
-    x_origin = request.headers.get('X-Origin')
-    if x_origin != "CloudFlare-SantaClausApp":
-        raise HTTPException(status_code=401, detail="Direct access not allowed ")
+    # Only allow internal requests from localhost
+    if not is_localhost(request):
+        raise HTTPException(status_code=403, detail="Access denied: internal endpoint only")
 
     user_id = request_body.user_id
     conn = get_db_connection()
@@ -1171,4 +1169,20 @@ if __name__ == '__main__':
     atexit.register(lambda: scheduler.shutdown())
 
     import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=7777, ssl_certfile='static/sec/cert.pem', ssl_keyfile='static/sec/privkey.pem')
+
+    # Function to run HTTPS server
+    def run_https():
+        uvicorn.run(app, host='0.0.0.0', port=7777, ssl_certfile='static/sec/cert.pem', ssl_keyfile='static/sec/privkey.pem')
+
+    # Function to run HTTP server
+    def run_http():
+        uvicorn.run(app, host='0.0.0.0', port=7778)
+
+    # Start HTTP server in a separate thread
+    http_thread = threading.Thread(target=run_http, daemon=True)
+    http_thread.start()
+    print("HTTP server started on port 7778")
+
+    # Run HTTPS server in main thread
+    print("HTTPS server starting on port 7777")
+    run_https()

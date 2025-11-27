@@ -121,26 +121,18 @@ python init_db.py
 
 ### Choose Your SSL Setup
 
-The call processing server (austin-to-santa.py) uses SSL by default. You have three options:
+The call processing server (austin-to-santa.py) now runs **two servers**:
+- **Port 7777 (HTTPS)**: For direct access with SSL certificates
+- **Port 7778 (HTTP)**: For use with Cloudflare Tunnel, ngrok, or internal communication
 
-#### Option 1: Disable SSL (Easiest for Testing)
+#### Option 1: Use HTTP Server (Easiest - Recommended for Testing)
 
-**Automatic method** (recommended):
-```bash
-python disable_ssl.py
-```
+Simply use port **7778** instead of 7777. This is perfect for:
+- Cloudflare Tunnel (which provides SSL for you)
+- ngrok (which provides SSL for you)
+- Local testing
 
-**Manual method**:
-Edit `austin-to-santa.py` and find line 1174. Change:
-```python
-# FROM THIS:
-uvicorn.run(app, host='0.0.0.0', port=7777, ssl_certfile='static/sec/cert.pem', ssl_keyfile='static/sec/privkey.pem')
-
-# TO THIS:
-uvicorn.run(app, host='0.0.0.0', port=7777)
-```
-
-This is perfect if you're using Cloudflare Tunnel (which provides SSL for you).
+No configuration changes needed - just point your tunnel/ngrok to port 7778.
 
 #### Option 2: Self-Signed Certificates (Local Testing)
 
@@ -176,15 +168,15 @@ Perfect for quick testing. Download from https://ngrok.com/download, then:
 # Terminal 1 - Expose the web app
 ngrok http 6789
 
-# Terminal 2 - Expose the call processor
-ngrok http 7777
+# Terminal 2 - Expose the call processor (HTTP server)
+ngrok http 7778
 ```
 
 You'll get URLs like `https://abc123.ngrok.io` - save these for the next step!
 
 ### Option B: Cloudflare Tunnel (Best for Production)
 
-More reliable and you can use your own domain:
+More reliable and you can use your own domain. Uses the HTTP server (port 7778) since Cloudflare provides SSL:
 
 1. **Install cloudflared**:
    - Windows: `winget install Cloudflare.cloudflared`
@@ -201,8 +193,8 @@ cloudflared tunnel login
 # Terminal 1 - Web interface
 cloudflared tunnel --url http://localhost:6789 --hostname santa.yourdomain.com
 
-# Terminal 2 - Call processor
-cloudflared tunnel --url http://localhost:7777 --hostname api-santa.yourdomain.com
+# Terminal 2 - Call processor (use HTTP port since Cloudflare provides SSL)
+cloudflared tunnel --url http://localhost:7778 --hostname api-santa.yourdomain.com
 ```
 
 ### Option C: LocalTunnel (Free Alternative)
@@ -213,11 +205,11 @@ Another free option if ngrok limits are an issue:
 # Install it first
 npm install -g localtunnel
 
-# Terminal 1
+# Terminal 1 - Web app
 lt --port 6789 --subdomain my-santa-app
 
-# Terminal 2
-lt --port 7777 --subdomain my-santa-api
+# Terminal 2 - Call processor (HTTP server)
+lt --port 7778 --subdomain my-santa-api
 ```
 
 ---
@@ -231,10 +223,10 @@ Now we need to tell Twilio where to send the calls:
 3. **Click on your number** to configure it
 4. **In the Voice Configuration section**, set:
    - "A call comes in" → Webhook
-   - URL: `https://your-api-url:7777/answer/{user_id}/{call_job_id}`
+   - URL: `https://your-api-url/answer/{user_id}/{call_job_id}`
    - Method: POST
 
-   Replace `your-api-url` with your ngrok/tunnel URL from Step 3.
+   Replace `your-api-url` with your ngrok/tunnel URL from Step 3 (the URL includes the port already).
 
 ### Set Up the Introduction Audio
 
@@ -269,7 +261,9 @@ You should see: `Running on http://0.0.0.0:6789`
 ```bash
 python austin-to-santa.py
 ```
-You should see: `Uvicorn running on http://0.0.0.0:7777`
+You should see:
+- `HTTP server started on port 7778`
+- `HTTPS server starting on port 7777`
 
 ---
 
@@ -312,8 +306,8 @@ The system includes several ways to test for free:
 - Look for errors in the austin-to-santa.py terminal
 
 **SSL Certificate errors:**
-- Use Option 1 (disable SSL) if using Cloudflare Tunnel
-- For self-signed certs, your browser will show warnings - this is normal
+- Use port 7778 (HTTP) if using Cloudflare Tunnel or ngrok - they provide SSL for you
+- For direct HTTPS access (port 7777), you need certificates in `static/sec/`
 
 ---
 

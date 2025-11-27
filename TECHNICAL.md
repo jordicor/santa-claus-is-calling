@@ -35,8 +35,9 @@ The system follows a modular architecture with three main components:
 │  - Payment processing                                    │
 │  - Call scheduling                                       │
 │  - User dashboard                                        │
+│  - Port 6789                                            │
 └────────────────────┬────────────────────────────────────┘
-                     │
+                     │ HTTP (localhost:7778)
 ┌────────────────────┴────────────────────────────────────┐
 │                  Call Processing System                  │
 │            (FastAPI - austin-to-santa.py)               │
@@ -45,6 +46,7 @@ The system follows a modular architecture with three main components:
 │  - AI Processing (OpenAI GPT-4/Claude)                  │
 │  - Text-to-Speech (ElevenLabs)                         │
 │  - Call state management                                │
+│  - Port 7777 (HTTPS) + Port 7778 (HTTP)                │
 └────────────────────┬────────────────────────────────────┘
                      │
 ┌────────────────────┴────────────────────────────────────┐
@@ -350,48 +352,6 @@ uvicorn austin-to-santa:app --reload
 3. **Language Models**: Response quality depends on AI model capabilities
 4. **Network Dependency**: Requires stable internet for all external services
 5. **Cost**: Each call incurs costs from multiple services (Twilio, AI, TTS)
-
-## Future Improvements
-
-### Technical Enhancements
-- Migrate to PostgreSQL for better scalability
-- Implement Redis for caching and session storage
-- Add WebRTC for browser-based calls
-- Implement load balancing for multiple servers
-- Add comprehensive logging and monitoring
-
-### Feature Additions
-- Video calls with animated Santa
-- Parent dashboard with call recordings
-- Multiple character options (Easter Bunny, Tooth Fairy)
-- Gift recommendation system
-- Integration with e-commerce for gift purchases
-
-### Business Features
-- Affiliate link integration
-- Analytics dashboard
-- Bulk discount for schools/organizations
-- White-label solution for businesses
-
-## Testing
-
-### Unit Tests
-- User registration and authentication
-- Payment processing
-- Call scheduling
-- Database operations
-
-### Integration Tests
-- End-to-end call flow
-- Payment gateway integration
-- Email notifications
-- SMS verification
-
-### Load Testing
-- Concurrent call handling
-- Database performance
-- API rate limits
-- WebSocket connections
 
 ## Contributing
 

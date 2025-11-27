@@ -27,8 +27,8 @@ cp .env.example .env
 # Initialize database
 python init_db.py
 
-# (Optional) Disable SSL for easier testing
-# Edit austin-to-santa.py line 1174, remove ssl_certfile and ssl_keyfile parameters
+# (Optional) If using Cloudflare Tunnel or similar, the app already runs
+# an HTTP server on port 7778 that you can use instead of the HTTPS one (7777)
 ```
 
 ## 3️⃣ Expose to Internet (2 min)
@@ -36,11 +36,11 @@ python init_db.py
 Download [ngrok](https://ngrok.com/download) then:
 
 ```bash
-# Terminal 1
+# Terminal 1 - Web app
 ngrok http 6789
 
-# Terminal 2
-ngrok http 7777
+# Terminal 2 - Call processor (use 7778 for HTTP or 7777 for HTTPS)
+ngrok http 7778
 ```
 
 Save both URLs you get (like `https://abc123.ngrok.io`)
@@ -48,7 +48,7 @@ Save both URLs you get (like `https://abc123.ngrok.io`)
 ## 4️⃣ Configure Twilio (2 min)
 
 1. Go to Twilio Console → Phone Numbers → Your Number
-2. Set webhook URL to: `https://[your-ngrok-url]:7777/answer/{user_id}/{call_job_id}`
+2. Set webhook URL to: `https://[your-ngrok-url]/answer/{user_id}/{call_job_id}`
 
 ## 5️⃣ Run It! (1 min)
 
@@ -75,7 +75,7 @@ python austin-to-santa.py
 **Having issues?** Common problems:
 - Both Python scripts must be running
 - ngrok URLs must be active
-- Twilio webhook must point to your ngrok URL
-- If using SSL, you need certificates or disable it
+- Twilio webhook must point to your ngrok URL for the call processor
+- Use port 7778 (HTTP) with ngrok/Cloudflare Tunnel, or 7777 (HTTPS) with certificates
 
 🎄 **Happy Testing!**
