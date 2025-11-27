@@ -18,9 +18,9 @@
 
 ## 📖 The Story Behind This Project
 
-Two years ago, after many years away from programming and focusing on audiovisual content creation, SEO, marketing, and finance, the emergence of AI tools like ChatGPT reignited my passion for coding. This project became my way back into development - a ambitious undertaking that combines cutting-edge AI technology with the magic of Christmas.
+Two years ago, after many years away from programming and focusing on audiovisual content creation, SEO, marketing, and finance, the emergence of AI tools like ChatGPT reignited my passion for coding. This project became my way back into development - an ambitious undertaking that combines cutting-edge AI technology with the magic of Christmas.
 
-**Santa Claus is Calling** it's a system that makes **actual phone calls** to children, where they can have real conversations with an AI-powered Santa Claus. The children hear their phone ring, see an unknown number, answer it, and hear Santa's voice asking for them by name. It's pure magic.
+**Santa Claus is Calling** is a system that makes **actual phone calls** to children, where they can have real conversations with an AI-powered Santa Claus. The children hear their phone ring, see an unknown number, answer it, and hear Santa's voice asking for them by name. It's pure magic.
 
 ### Why This Project Exists
 
